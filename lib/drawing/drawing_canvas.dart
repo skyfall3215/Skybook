@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:perfect_freehand/perfect_freehand.dart' hide StrokePoint;
 import 'stroke_model.dart';
 
 // Kalem dokunuşlarını yakalayan ve ekrana çizen tuval widget'ı
@@ -104,49 +105,51 @@ class _CanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Tamamlanmış tüm çizgileri çiz
+    // Tamamlanmış tüm çizgileri pürüzsüzleştirerek çiz
     for (final stroke in strokes) {
-      _drawStroke(canvas, stroke);
+      _drawStroke(canvas, stroke, isComplete: true);
     }
 
-    // Halen çizilmekte olan aktif çizgiyi çiz
+    // Halen çizilmekte olan aktif çizgiyi pürüzsüzleştirerek çiz
     if (currentStroke != null) {
-      _drawStroke(canvas, currentStroke!);
+      _drawStroke(canvas, currentStroke!, isComplete: false);
     }
   }
 
-  // Noktalar arasına basınca bağlı kalınlık uygulayarak çizgi çiz
-  void _drawStroke(Canvas canvas, Stroke stroke) {
+  // perfect_freehand ile basınca duyarlı pürüzsüz dış hat hesaplayıp çiz
+  void _drawStroke(Canvas canvas, Stroke stroke, {required bool isComplete}) {
     if (stroke.points.isEmpty) return;
+
+    // StrokePoint listesini PointVector listesine dönüştür
+    final inputPoints = stroke.points
+        .map((p) => PointVector(p.x, p.y, p.pressure))
+        .toList();
+
+    // Pürüzsüz dış hat noktalarını hesapla
+    final outlinePoints = getStroke(
+      inputPoints,
+      options: StrokeOptions(
+        size: stroke.size,
+        simulatePressure: false,
+        isComplete: isComplete,
+      ),
+    );
+
+    if (outlinePoints.isEmpty) return;
+
+    // Dış hat noktalarını Path nesnesine dönüştür
+    final path = Path();
+    path.moveTo(outlinePoints.first.dx, outlinePoints.first.dy);
+    for (int i = 1; i < outlinePoints.length; i++) {
+      path.lineTo(outlinePoints[i].dx, outlinePoints[i].dy);
+    }
+    path.close();
 
     final paint = Paint()
       ..color = stroke.color
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+      ..style = PaintingStyle.fill;
 
-    // Tek nokta varsa nokta olarak bas
-    if (stroke.points.length == 1) {
-      final p = stroke.points.first;
-      paint.strokeWidth = stroke.size * p.pressure;
-      canvas.drawCircle(Offset(p.x, p.y), (stroke.size * p.pressure) / 2, paint);
-      return;
-    }
-
-    // Ardışık iki nokta arasına çizgi çek
-    for (int i = 0; i < stroke.points.length - 1; i++) {
-      final p1 = stroke.points[i];
-      final p2 = stroke.points[i + 1];
-
-      // İki noktanın ortalama basıncına göre kalınlık hesapla
-      final avgPressure = (p1.pressure + p2.pressure) / 2;
-      paint.strokeWidth = stroke.size * avgPressure;
-
-      canvas.drawLine(
-        Offset(p1.x, p1.y),
-        Offset(p2.x, p2.y),
-        paint,
-      );
-    }
+    canvas.drawPath(path, paint);
   }
 
   @override

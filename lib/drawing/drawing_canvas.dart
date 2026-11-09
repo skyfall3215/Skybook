@@ -5,12 +5,16 @@ import 'stroke_model.dart';
 // Kalem dokunuşlarını yakalayan ve ekrana çizen tuval widget'ı
 class DrawingCanvas extends StatefulWidget {
   final List<Stroke> strokes;
+  final Color currentColor;
+  final double currentSize;
   final ValueChanged<Stroke> onStrokeAdded;
   final ValueChanged<double> onPressureChanged;
 
   const DrawingCanvas({
     super.key,
     required this.strokes,
+    required this.currentColor,
+    required this.currentSize,
     required this.onStrokeAdded,
     required this.onPressureChanged,
   });
@@ -44,8 +48,8 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     setState(() {
       _currentStroke = Stroke(
         points: [newPoint],
-        color: Colors.black,
-        size: 6.0,
+        color: widget.currentColor,
+        size: widget.currentSize,
       );
     });
   }

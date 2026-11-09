@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'drawing_canvas.dart';
+import 'drawing_toolbar.dart';
 import 'stroke_model.dart';
 
 // Tuval ve arayüzü birleştiren ana çizim ekranı
@@ -13,6 +14,10 @@ class DrawingPage extends StatefulWidget {
 class _DrawingPageState extends State<DrawingPage> {
   // Çizgi listesi sayfa durumunda tutulur
   final List<Stroke> _strokes = [];
+
+  // Seçili renk ve kalınlık
+  Color _selectedColor = Colors.black;
+  double _selectedSize = 6.0;
 
   // Sağ üstte gösterilecek son okunan basınç değeri
   double _currentPressure = 0.0;
@@ -39,8 +44,29 @@ class _DrawingPageState extends State<DrawingPage> {
           Positioned.fill(
             child: DrawingCanvas(
               strokes: _strokes,
+              currentColor: _selectedColor,
+              currentSize: _selectedSize,
               onStrokeAdded: _onStrokeAdded,
               onPressureChanged: _onPressureChanged,
+            ),
+          ),
+          // Üst araç çubuğu (renk ve kalınlık seçimi)
+          Positioned(
+            top: 40,
+            left: 20,
+            child: DrawingToolbar(
+              selectedColor: _selectedColor,
+              selectedSize: _selectedSize,
+              onColorChanged: (color) {
+                setState(() {
+                  _selectedColor = color;
+                });
+              },
+              onSizeChanged: (size) {
+                setState(() {
+                  _selectedSize = size;
+                });
+              },
             ),
           ),
           // Basınç göstergesi
